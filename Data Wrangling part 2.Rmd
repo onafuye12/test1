@@ -1,0 +1,421 @@
+---
+title: "Data Wrangling part 2"
+Instructor: Oge Chukwuemeka
+---
+
+Loading Installed Packages
+```{r}
+# necessary to have a list of loaded packages for project
+library(data.table)
+library(stringr)
+library(lubridate)
+library(readr)
+library(haven)
+library(readxl)
+library(tidyr)
+library(tidyverse) # for tibble manipulation
+
+```
+
+-   Assignment :
+1. create and save as csv, a new dataset to show only the 3rd class passengers of titanic who survived the ordeal.
+2. print only children with n value greater than 5.
+3. Do you think more Female survived the ordeal than Male. Show the findings to support your argument.
+
+```{r}
+getwd()
+```
+
+
+```{r}
+# load titanic dataset and assign to a variable
+titanicdata <- as_tibble(Titanic)
+
+# create and save as a csv file
+write_csv(titanicdata, "titanicdata.csv")
+
+```
+
+```{r}
+# load saved csv file for use
+titanic_data <- read_csv("titanicdata.csv")
+
+```
+
+Show only the 3rd class passengers of titanic who survived the ordeal.
+```{r}
+
+third_class_surv <- titanic_data %>% 
+                      filter( Class == "3rd") %>%
+                              filter(Survived == "Yes")
+third_class_surv
+
+```
+As shown in the output, 4 categories of passengers consisting of Male & female Children as well as Male and Female Adults were saved.
+
+
+Print only children with n value greater than 5.
+```{r}
+Child_5 <- titanic_data %>% 
+                      filter( Age == "Child") %>%
+                              filter(n > 5)
+Child_5
+
+```
+
+Do you think more Female survived the ordeal than Male. Show the findings to support your argument.
+```{r}
+# Lets extract no of Female that survived as well as Male seperately and compare by how many observations
+
+male_survived <- titanic_data %>% 
+                      filter( Sex == "Male") %>%
+                              filter( Survived == "Yes")
+male_survived
+
+female_survived <- titanic_data %>% 
+                      filter( Sex == "Female") %>%
+                              filter( Survived == "Yes")
+female_survived
+
+count(female_survived)
+count(male_survived)
+
+```
+From the data it can be seen that 8 Female categories survived as well as 8 male categories.
+It can then be deduced that survival for both Categories was at the same rate.
+
+
+
+#### Assignment 2
+Create a tibble from the iris r inbuilt dataset, 
+1. Check out the different kinds of Species without replacement.
+2. Sample 45% of the population without replacement
+3. What are the mean Sepal length and Width of the population
+4. What are the 1st Quartile and 3rd Quartile mark of the Petal Length of the Iris flower.
+5. How many Unique species do we have for the dataset set and how many of each were observed during the study?
+
+
+```{r}
+View(iris)
+# create an object 
+irisdata <- as_tibble(iris)
+```
+
+Check out the different kinds of Species without replacement.
+```{r}
+#distinct(irisdata$Species)
+my_species <- unique(irisdata$Species)
+my_species
+
+```
+
+Sample 45% of the population without replacement
+```{r}
+sample_45 <- slice_sample(irisdata, prop = 0.45, replace = FALSE)
+sample_45
+```
+
+What are the mean Sepal length and Width of the population
+```{r}
+
+sep_len_mean = round(mean(iris$Sepal.Length),2)
+sep_wid_mean = round(mean(iris$Sepal.Width),2)
+
+print(sep_len_mean)
+print(sep_wid_mean)
+
+```
+
+What are the 1st Quartile and 3rd Quartile mark of the Petal Length of the Iris flower.
+```{r}
+Quartile <- summary(iris$Petal.Length)
+Quartile
+
+```
+
+The 1st quartile is at 1.6 and the 3rd quartile is at 5.1
+
+How many Unique species do we have for the dataset set and how many of each were observed during the study?
+```{r}
+uni_count_species <- count(irisdata, Species)
+uni_count_species
+
+```
+
+
+
+Data Wrangling 2 :
+
+
+Adding new observations(rows) to a dataset
+add_row() adds one or more rows to a table
+```{r}
+#loading the dataset cars
+#attach(cars)
+
+view(cars)
+
+cars <- add_row(cars, speed = 1, dist = 1)
+
+view(cars)
+
+```
+
+```{r}
+#### Add Variables/Columns ####
+df <- tibble(x = 1:3, y=3:1)
+df
+
+df %>% add_column(z = -1:1, w = 4:6)
+df %>% add_column(z = -1:1, .before = "y")
+df %>% add_column(z = -1:1, .after = "y")
+df %>% add_column(z = -1:1, new = "y")
+
+```
+
+```{r}
+cars_tb <- as_tibble(mtcars)
+```
+
+```{r}
+#select() extract columns as a table
+select(cars_tb, mpg, wt)
+
+names(cars_tb)
+
+# relocate() moves columns to new position
+relocate(cars_tb, mpg, cyl, .after = last_col())
+
+relocate(cars_tb, vs, .before = mpg)
+```
+
+
+Joins 
+Creating different joins from two datasets with a common variable.
+```{r}
+ab_hosp <- read_csv("/Users/oge/Documents/Datalab R class/Lecture notes/Data  Wrangling/Abia_hosp.csv")
+ab_hosp_loc <- read_csv("/Users/oge/Documents/Datalab R class/Lecture notes/Data  Wrangling/Abia_hosp_location.csv")
+ab_hosp_opr <- read_csv("/Users/oge/Documents/Datalab R class/Lecture notes/Data  Wrangling/Abia_hosp_operation.csv")
+```
+
+
+Viewing column names to see commonality
+```{r}
+colnames(ab_hosp)
+colnames(ab_hosp_loc)
+colnames(ab_hosp_opr)
+```
+
+```{r}
+#The common variable is the uid which is the unique id for each hospital.
+
+#Full Outer Join for the three dataset. consisting of all the observations seen in all 3.
+Ab_hosp_list <- merge(ab_hosp,ab_hosp_loc, by="uid",all=TRUE )
+Ab_hosp_list <- merge(Ab_hosp_list, ab_hosp_opr, by ="uid", all = TRUE)
+
+#Inner Join 
+Ab_inner_join = merge(ab_hosp,ab_hosp_loc, by="uid")
+Ab_inner_join = merge(Ab_inner_join,ab_hosp_opr, by="uid")
+
+#Left Join
+Ab_left_join= merge(ab_hosp,ab_hosp_loc, by="uid", all.x = TRUE)
+Ab_left_join= merge(Ab_left_join,ab_hosp_opr, by="uid", all.x = TRUE)
+
+#right Join
+Ab_right_join= merge(ab_hosp,ab_hosp_loc, by="uid", all.y = TRUE)
+Ab_right_join= merge(Ab_left_join,ab_hosp_opr, by="uid", all.y = TRUE)
+
+```
+
+seeing the structure of the various datasets
+```{r}
+dim(ab_hosp)
+dim(ab_hosp_loc)
+dim(ab_hosp_opr)
+dim(Ab_hosp_list)
+dim(Ab_inner_join)
+dim(Ab_left_join)
+dim(Ab_right_join)
+```
+
+
+
+9.  FUNCTIONS
+A function is a block of code which only runs when it is called. You specify the parameters if needed for the function within the().
+
+A function can return data as a result either for viewing or for further use.
+
+i. Creating a Function
+To create a function, use the function() keyword and specify the parameters if needed for the function within the().
+
+Call a Function:- To call a function, use the function name followed by parenthesis, like my_function(): where arguments required for the execution at call time to be listed within()
+
+```{r}
+args(merge)
+merge(x,y)
+max()
+
+merge(x, y, by = intersect(names(x), names(y)),
+      by.x = by, by.y = by, all = FALSE, all.x = all, all.y = all,
+      sort = TRUE, suffixes = c(".x",".y"), no.dups = TRUE,
+      incomparables = NULL, ...)
+
+merge(df1,df2)
+
+```
+
+```{r}
+
+# create a function with the name 
+
+my_function <- function() { 
+  print("mr aluko!")
+}
+
+# call the function named my_function
+my_function() 
+
+```
+
+Function with parameters
+
+```{r}
+
+my_sum <- function(x,y) {
+  z = x + y
+  print(z)
+}
+
+my_sum(3,6)
+
+```
+```{r}
+
+find_child_sch <- function(df,col1,col2,col3) { # x = first column, y  = 2nd column, z = 3rd column)
+  df %>% filter(col1 == "Child") %>%
+      filter(col2 <= 5) %>% 
+          filter(col3 == "No")
+}
+
+find_child_sch(df2,df2$Category, df2$Age,df2$In_school)
+
+find_child_sch()
+```
+
+```{r}
+
+name <- function(i,x,y,word,word2){ # i is considered a parameter
+while (i <= x) {
+  print(word)
+  i <- i + 1
+  if (i == y) {
+    print(word2)
+    #break
+  }
+}
+}
+
+name(1,9,5,"Hello, Sir!!!","Don't be soooo lazy") # 1 is considered an argument 
+
+# ie a parameter is requested at the point the function is being created/declared and an argument is provided at the point of call or use.
+```
+
+
+ii. Return Values
+To let a function return a result, use the return() function:
+
+```{r}
+
+my_function <- function(x) { #function receives x
+  ab <- 5 * x #multiplies x by 5
+  tt <- ab + 1 #add 1 to the result
+  return (tt) #return the final result
+}
+
+#call function on different numbers
+my_function(3)
+my_function(5)
+my_function(9)
+
+```
+
+iii.
+
+Creating a function that performs an iteration and generates a set of new values using for and if statements and makes it a new column in any given dataset :- get the mean of a numeric dataset and create a new column using the (value - the mean value)
+step by step:
+- identify the numerical variable to used for the feature engineering
+- calculate the mean of the entire column observation
+- iterate through it to extract per element
+- generate the variance for each element
+- return the value as a list
+- assign this list as the new column - mean_dev
+
+```{r}
+irisdata <- as_tibble(iris)
+```
+
+
+```{r}
+# lets generate the observation's deviation from the mean value and make it the value for the new column
+# target column = Sepal.Length
+# using formula :- value - mean
+dev_value <- function(column_name){
+  mean_val <- mean(column_name)
+  mean_val
+  dev_val <- vector()
+  #iterate through each observation to generate the deviation
+    for (item in column_name){
+      deviation = round((item - mean_val),2)
+      dev_val = append(dev_val,deviation)
+    }
+    return(dev_val)
+  }
+
+irisdata$Sep_len_dev <- dev_value(irisdata$Sepal.Length)
+
+```
+
+```{r}
+ 
+titanic_data$deviation <- dev_value(titanic_data$Freq)
+
+mean(titanic_data$Freq)
+
+```
+
+```{r}
+
+mtcarsdf <- as.data.frame(mtcars)
+mean(mtcarsdf$mpg)
+
+mtcarsdf$mpg_dev <- dev_value(mtcarsdf$mpg)
+mtcarsdf <- mtcarsdf %>% relocate(mpg_dev, .after = "mpg")
+
+
+
+```
+
+
+
+```{r}
+
+
+```
+
+
+R online help commands
+```{r}
+
+?func
+?*
+help(*)  
+
+#Display the argument list of a function, that is, other parameters that could be used with the function
+args(sum) 
+
+#?sum # results in the help pane
+
+#args(median)
+
+
+```
